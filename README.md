@@ -80,12 +80,55 @@ Update `.env` with your domain before deploying:
 ```env
 URL=https://wiki.example.com
 POCKETID_APP_URL=https://auth.example.com
+POCKETID_TRUST_PROXY=true
 FORCE_HTTPS=true
 
 OIDC_AUTH_URI=https://auth.example.com/authorize
 OIDC_LOGOUT_URI=https://auth.example.com/api/oidc/end-session
 OIDC_TOKEN_URI=http://pocket-id:1411/api/oidc/token
 OIDC_USERINFO_URI=http://pocket-id:1411/api/oidc/userinfo
+```
+
+**Passkey requirements on VPS:**
+- `POCKETID_APP_URL` must be **exactly** the URL you open in the browser (`https://auth.example.com` — no trailing slash, no port)
+- **HTTPS is mandatory** for passkeys on real domains (HTTP only works on `localhost`)
+- `POCKETID_TRUST_PROXY=true` when behind Nginx, Traefik, or Cloudflare
+- Reverse proxy must forward `X-Forwarded-Proto`, `X-Forwarded-Host`, and `Host`
+
+Nginx example for Pocket ID:
+
+```nginx
+server {
+    listen 443 ssl;
+    server_name auth.example.com;
+
+    location / {
+        proxy_pass http://127.0.0.1:1411;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $host;
+    }
+}
+```
+
+Nginx example for Outline:
+
+```nginx
+server {
+    listen 443 ssl;
+    server_name wiki.example.com;
+
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $host;
+    }
+}
 ```
 
 Pocket ID callback URL: `https://wiki.example.com/auth/oidc.callback`
@@ -114,6 +157,37 @@ docker compose exec postgres pg_dump -U outline outline > backup.sql
 ```
 
 ## Troubleshooting
+
+### Pocket ID: `Passkeys are not configured correctly for this domain`
+
+This means the WebAuthn domain does not match `POCKETID_APP_URL`. Common causes on VPS:
+
+| Problem | Fix |
+|---------|-----|
+| Still using `http://localhost:1411` in `.env` | Set `POCKETID_APP_URL=https://auth.yourdomain.com` |
+| Accessing via HTTP on a real domain | Use HTTPS — passkeys require a secure context |
+| `TRUST_PROXY=false` behind reverse proxy | Set `POCKETID_TRUST_PROXY=true` |
+| Trailing slash in URL | Use `https://auth.example.com` not `https://auth.example.com/` |
+| `www` vs bare domain mismatch | Match exactly what you type in the browser |
+| Reverse proxy missing headers | Add `X-Forwarded-Proto` and `X-Forwarded-Host` (see Nginx example above) |
+
+After fixing `.env`:
+
+```bash
+docker compose up -d pocket-id
+```
+
+Verify Pocket ID sees the correct domain — in browser DevTools → Network → any WebAuthn request, check `"rp": { "id": "auth.example.com" }` (not `localhost`).
+
+If you previously set up Pocket ID with the wrong `APP_URL`, you may need to reset and re-register passkeys:
+
+```bash
+docker compose stop pocket-id
+docker compose rm -f pocket-id
+docker volume rm outline-self-hosted_pocket-id-data
+docker compose up -d pocket-id
+# then visit https://auth.yourdomain.com/setup again
+```
 
 ### Pocket ID: `failed to decrypt private key`
 

@@ -25,8 +25,8 @@ services:
       APP_URL: ${POCKETID_APP_URL:-http://localhost:1411}
       INTERNAL_APP_URL: ${POCKETID_INTERNAL_APP_URL:-http://pocket-id:1411}
       ENCRYPTION_KEY: ${POCKETID_ENCRYPTION_KEY}
-      TRUST_PROXY: "false"
-      ALLOW_INSECURE_CALLBACK_URLS: "true"
+      TRUST_PROXY: ${POCKETID_TRUST_PROXY:-false}
+      ALLOW_INSECURE_CALLBACK_URLS: ${POCKETID_ALLOW_INSECURE_CALLBACK_URLS:-true}
     volumes:
       - pocket-id-data:/app/data
     healthcheck:
