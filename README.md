@@ -146,6 +146,54 @@ docker compose up -d
 
 Point your reverse proxy (Nginx, Traefik, etc.) to ports **3000** (Outline) and **1411** (Pocket ID) for TLS termination.
 
+## Cursor MCP Integration
+
+Connect Cursor to your Outline workspace via the built-in MCP server.
+
+### 1. Enable MCP in Outline
+
+**Settings → Workspace → AI** → enable MCP for the workspace.
+
+### 2. Cursor config
+
+Project config is included at [`.cursor/mcp.json`](.cursor/mcp.json):
+
+```json
+{
+  "mcpServers": {
+    "outline": {
+      "url": "https://outline.indramahesa.dev/mcp"
+    }
+  }
+}
+```
+
+Or add globally in `~/.cursor/mcp.json`. On first use, Cursor opens an **OAuth login** to your Outline account.
+
+**Optional — API key auth** (headless / no OAuth popup):
+
+1. Outline → **Settings → API Keys** → create a key
+2. Add headers to the MCP config:
+
+```json
+{
+  "mcpServers": {
+    "outline": {
+      "url": "https://outline.indramahesa.dev/mcp",
+      "headers": {
+        "Authorization": "Bearer YOUR_API_KEY"
+      }
+    }
+  }
+}
+```
+
+### 3. Reload Cursor
+
+**Cursor Settings → MCP** → verify `outline` shows as connected, or reload the window.
+
+Docs: [Outline MCP guide](https://docs.getoutline.com/s/guide/doc/mcp-6j9jtENNKL)
+
 ## Useful Commands
 
 ```bash
