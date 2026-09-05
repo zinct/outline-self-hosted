@@ -50,6 +50,7 @@ docker compose up -d
 #    - Name: Outline
 #    - Callback URL: http://localhost:3000/auth/oidc.callback
 #    - Copy Client ID & Client Secret
+#    - IMPORTANT: click "Unrestrict" (or assign your user group) — clients are restricted by default in Pocket ID v2
 
 # 5. Add credentials to .env
 #    OIDC_CLIENT_ID=...
@@ -157,6 +158,16 @@ docker compose exec postgres pg_dump -U outline outline > backup.sql
 ```
 
 ## Troubleshooting
+
+### Pocket ID: `You're not allowed to access this service`
+
+Since Pocket ID v2, **new OIDC clients are restricted by default** — no user can access them until you allow it. See [Allowed User Groups docs](https://pocket-id.org/docs/configuration/allowed-groups).
+
+**Quick fix:** Pocket ID admin → **OIDC Clients** → click your Outline client → **Unrestrict**
+
+**Or restrict to specific users:**
+1. **Administration → User Groups** → create a group → add your user
+2. **OIDC Clients** → Outline client → **Allowed User Groups** → select the group → Save
 
 ### Pocket ID: `Passkeys are not configured correctly for this domain`
 
